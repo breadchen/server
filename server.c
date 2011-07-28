@@ -30,15 +30,14 @@ int main(int argc, char** argv)
 	PRINT_TEST(test_buf)
 	
 	// init address data	
-	if (2 <= argc)
-	{ // use arguments
-		if (FUC_FAILURE == addr_convert(argv[1], &serv_addr.sin_addr))
-		{
-			PRINT_ERR("can not recognize the ip address or hostname")
-		} // end of if
-	} // end of if
+	if (argc >= 2 &&
+		FUC_SUCCESS == addr_convert(argv[1], &serv_addr.sin_addr)
+		);
 	else
-	{ // use local address
+	{ // if can't use arguments use local address
+		PRINT_ERR("can not recognize the ip address or hostname")
+		PRINT_ERR("use local address")
+
 		bzero(&serv_addr, sizeof(serv_addr));
 		if (FUC_FAILURE == get_local_address(&serv_addr))
 		{
@@ -46,6 +45,8 @@ int main(int argc, char** argv)
 			exit(EXIT_FAILURE);	
 		} // end of if
 	} // end of else
+	
+	// bind socket to address
 	
 	return EXIT_SUCCESS;
 } // end of main
