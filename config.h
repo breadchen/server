@@ -3,6 +3,7 @@
 
 #define PORT 2000
 #define IP "192.168.2.3"
+#define BACK_LOG 5
 #define MAX_MSG_LEN 50
 
 #define FUC_SUCCESS 0

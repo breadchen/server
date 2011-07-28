@@ -22,6 +22,7 @@ int main(int argc, char** argv)
 	n_socketfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (0 > n_socketfd)
 	{
+		PRINT_ERR("init socket error")
 		PRINT_ERR(strerror(errno))
 		exit(EXIT_FAILURE);
 	} // end of if
@@ -34,7 +35,7 @@ int main(int argc, char** argv)
 		FUC_SUCCESS == addr_convert(argv[1], &serv_addr.sin_addr)
 		);
 	else
-	{ // if can't use arguments use local address
+	{ // if can't use arguments, use local address instead
 		PRINT_ERR("can not recognize the ip address or hostname")
 		PRINT_ERR("use local address")
 
@@ -47,6 +48,22 @@ int main(int argc, char** argv)
 	} // end of else
 	
 	// bind socket to address
+	if (bind(n_socketfd, 
+			(struct sockaddr*)&serv_addr, 
+			sizeof(serv_addr)) < 0)
+	{
+		PRINT_ERR("bind error")
+		PRINT_ERR(strerror(errno))
+		exit(EXIT_FAILURE);
+	} // end of if
+
+	// change socket to listen state
+	if (listen(n_socketfd, BACK_LOG) < 0)
+	{
+		PRINT_ERR("listen error")
+		PRINT_ERR(strerror(errno))
+		exit(EXIT_FAILURE);
+	} // end of if
 	
 	return EXIT_SUCCESS;
 } // end of main
@@ -60,11 +77,12 @@ int get_local_address(struct sockaddr_in *addr_out)
 {
 	addr_out->sin_family = AF_INET;
 	addr_out->sin_port = htons(PORT);
-	if (0 == inet_aton(IP, &(addr_out->sin_addr)))
-	{
-		PRINT_ERR(strerror(errno))
-		return FUC_FAILURE;
-	} // end of if
+	addr_out->sin_addr.s_addr = htonl(INADDR_ANY);
+////if (0 == inet_aton(IP, &(addr_out->sin_addr)))
+////{
+////	PRINT_ERR(strerror(errno))
+////	return FUC_FAILURE;
+////} // end of if
 	return FUC_SUCCESS;
 } // end of get_local_address()
 
