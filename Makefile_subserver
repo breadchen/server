@@ -1,5 +1,0 @@
-
-objects = subserver.c config.h errreport.h
-
-subserver : $(objects)
-	gcc -g -o subserver $(objects)

@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "errreport.h"
+#include "subserver.h"
 
 extern int get_local_address(struct sockaddr_in *addr_out);
 extern int addr_convert(char* addr, struct in_addr *addr_out); 
@@ -104,17 +105,16 @@ int main(int argc, char** argv)
 		{
 			if (n_pid == 0)
 			{
-				// convert int to char[]
-				sprintf(charbuf, "%d", n_clientsock);
-				if (execl(SUBSERVER_PATH, 
-					 	  SUBSERVER_NAME, 
-						  charbuf,
-						  NULL) < 0)
+				close(n_serversock);
+
+				if (FUC_FAILURE == subserver(n_clientsock))
 				{
-					PRINT_ERR("execl error")
-					PRINT_ERR(strerror(errno))
+					close(n_clientsock);
 					exit(EXIT_FAILURE);
 				} // end of if
+
+				close(n_clientsock);
+				exit(EXIT_SUCCESS);
 			} // end of if
 			else
 			{

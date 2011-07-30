@@ -3,12 +3,14 @@
 #include "config.h"
 #include "errreport.h"
 
-int main(int argc, char** argv)
+int subserver(int n_clientsock)
 {
-	sprintf(test_buf, "%s, %s", argv[0], argv[1]);
+	char msg_recv[MAX_MSG_LEN];
+
+	sprintf(test_buf, "%d", n_clientsock);
 	PRINT_TEST(test_buf)
 
 	
 
-	return EXIT_SUCCESS;
+	return FUC_SUCCESS;
 } // end of main()
