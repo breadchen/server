@@ -118,9 +118,11 @@ int main(int argc, char** argv)
 			} // end of if
 			else
 			{
+				close(n_clientsock);
+
 				wait(&n_exit_status);
 				sprintf(test_buf, 
-						"child process exit with code %d\n",
+						"child process exit with code %d",
 						n_exit_status);
 				PRINT_TEST(test_buf)
 			} // end of else

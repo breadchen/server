@@ -12,8 +12,6 @@
 #define MAX_CLIENT_NUM 256
 // char buffer size, used to convert int to char[]
 #define BUF_SIZE 50
-#define SUBSERVER_PATH "./subserver"
-#define SUBSERVER_NAME "./subserver"
 
 #define FUC_SUCCESS 0
 #define FUC_FAILURE 1
