@@ -14,6 +14,7 @@
 #define BUF_SIZE 50
 
 #define FUC_SUCCESS 0
-#define FUC_FAILURE 1
+#define FUC_FAILURE -1
+#define QUIT_SUBSERVER 2
 
 #endif // if (!_ADDRESS_H)

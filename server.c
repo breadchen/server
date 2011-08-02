@@ -6,13 +6,16 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "config.h"
 #include "errreport.h"
 #include "subserver.h"
+//#include "picmanager.h"
 
 extern int get_local_address(struct sockaddr_in *addr_out);
 extern int addr_convert(char* addr, struct in_addr *addr_out); 
+extern void child_handler(int);
 
 int main(int argc, char** argv)
 {
@@ -20,7 +23,6 @@ int main(int argc, char** argv)
 	int n_clientsock = 0;
 	int n_clientaddr_len = 0;
 	int n_pid = 0;
-	int n_exit_status = 0;
 	int pid_clients[MAX_CLIENT_NUM];
 	int n_client_count = 0;
 	char charbuf[BUF_SIZE];
@@ -80,7 +82,14 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	} // end of if
 	
-	memset(pid_clients, -1, MAX_CLIENT_NUM);
+	// handle SIGCHLD signal
+	if (SIG_ERR == signal(SIGCHLD, &child_handler))
+	{
+		PRINT_ERR("couldn't registe signal handler")
+		exit(EXIT_FAILURE);
+	} // end of if
+
+	//init_manager();
 	// handle client request
 	while (i++ < 3)
 	{
@@ -104,7 +113,7 @@ int main(int argc, char** argv)
 		else
 		{
 			if (n_pid == 0)
-			{
+			{ // child process
 				close(n_serversock);
 
 				if (FUC_FAILURE == subserver(n_clientsock))
@@ -117,14 +126,9 @@ int main(int argc, char** argv)
 				exit(EXIT_SUCCESS);
 			} // end of if
 			else
-			{
+			{ // parent process
 				close(n_clientsock);
 
-				wait(&n_exit_status);
-				sprintf(test_buf, 
-						"child process exit with code %d",
-						n_exit_status);
-				PRINT_TEST(test_buf)
 			} // end of else
 		} // end of else
 	} // end of while
@@ -175,3 +179,20 @@ int addr_convert(char *addr, struct in_addr *addr_out)
 
 	return FUC_FAILURE;
 } // end of addr_convert()
+
+
+/*
+ * Function: handle SIGCHLD signal
+ */
+void child_handler(int sig)
+{
+	int n_exit_status = 0;
+	int pid = 0;
+
+	pid = wait(&n_exit_status);
+	sprintf(test_buf, 
+			"child process[%d] exit with code %d",
+			pid,
+			n_exit_status);
+	PRINT_TEST(test_buf)
+} // end of child_handler()
