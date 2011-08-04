@@ -11,7 +11,8 @@
 #include "config.h"
 #include "errreport.h"
 #include "subserver.h"
-//#include "picmanager.h"
+#include "pidmanager.h"
+#include "responsecode.h"
 
 extern int get_local_address(struct sockaddr_in *addr_out);
 extern int addr_convert(char* addr, struct in_addr *addr_out); 
@@ -23,8 +24,7 @@ int main(int argc, char** argv)
 	int n_clientsock = 0;
 	int n_clientaddr_len = 0;
 	int n_pid = 0;
-	int pid_clients[MAX_CLIENT_NUM];
-	int n_client_count = 0;
+	int n_can_add;
 	char charbuf[BUF_SIZE];
 	struct sockaddr_in serv_addr;
 	struct sockaddr_in client_addr;
@@ -89,9 +89,9 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	} // end of if
 
-	//init_manager();
+	init_manager();
 	// handle client request
-	while (i++ < 3)
+	while (i++ < 6)
 	{
 		// wait for client
 		n_clientsock = accept(n_serversock, 
@@ -104,6 +104,7 @@ int main(int argc, char** argv)
 			continue;
 		} // end of if
 
+		n_can_add = can_add();
 		// invoke subserver to handle client request
 		if ((n_pid = fork()) < 0)
 		{
@@ -116,7 +117,15 @@ int main(int argc, char** argv)
 			{ // child process
 				close(n_serversock);
 
-				if (FUC_FAILURE == subserver(n_clientsock))
+				// if pid manager is full
+				if (FUC_FAILURE == n_can_add)
+				{
+					subserver(n_clientsock, SERVER_BUSY);
+					close(n_clientsock);
+					exit(EXIT_FAILURE);
+				} // end of if
+
+				if (FUC_FAILURE == subserver(n_clientsock, WELCOME))
 				{
 					close(n_clientsock);
 					exit(EXIT_FAILURE);
@@ -129,6 +138,15 @@ int main(int argc, char** argv)
 			{ // parent process
 				close(n_clientsock);
 
+				if (FUC_SUCCESS == n_can_add)
+				{
+					if (0 == kill(n_pid, 0))
+					{
+						add_pid(n_pid); // add pid to pid manager
+						sprintf(test_buf, "adding pid[%d]", n_pid);
+						PRINT_TEST(test_buf);
+					} // end of if
+				} // end of if
 			} // end of else
 		} // end of else
 	} // end of while
@@ -188,8 +206,18 @@ void child_handler(int sig)
 {
 	int n_exit_status = 0;
 	int pid = 0;
+	int pos = -1;
 
 	pid = wait(&n_exit_status);
+
+	// remove pid from pid manager
+	if (FUC_FAILURE != (pos = get_pos(pid)))
+	{
+		rm_pid(pos);
+		sprintf(test_buf, "remove pid[%d]", pid);
+		PRINT_TEST(test_buf)
+	} // end of if
+	
 	sprintf(test_buf, 
 			"child process[%d] exit with code %d",
 			pid,

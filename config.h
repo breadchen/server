@@ -9,7 +9,7 @@
 // chars of each message 
 #define MAX_MSG_LEN 50
 // use this to init pid_clients[]
-#define MAX_CLIENT_NUM 256
+#define MAX_CLIENT_NUM 3
 // char buffer size, used to convert int to char[]
 #define BUF_SIZE 50
 

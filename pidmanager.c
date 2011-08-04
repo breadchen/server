@@ -19,6 +19,27 @@ void init_manager()
 
 
 /*
+ * Function: test whether array pids is full
+ */
+int can_add()
+{
+	extern void gc();
+
+	if (n_pid_count < MAX_CLIENT_NUM)
+	{
+		if (FUC_FAILURE == find_position(EMPTY))
+		{
+			//gc();
+			//if (FUC_FAILURE == find_position(EMPTY))
+				return FUC_FAILURE;
+		} // end of if		
+		return FUC_SUCCESS;
+	} // end of if
+	return FUC_FAILURE;	
+} // end of can_add()
+
+
+/*
  * Fuction: add a pid to array pids, 
  *  if array pids is full return FUC_FAILURE
  */
@@ -26,6 +47,7 @@ int add_pid(int pid)
 {
 	int pos;
 	extern int find_position(int);
+	extern void gc();
 
 	// if pid is already in array pids
 	if (FUC_FAILURE != find_position(pid)) return FUC_SUCCESS;
@@ -34,12 +56,13 @@ int add_pid(int pid)
 	{
 		if (FUC_FAILURE == (pos = find_position(EMPTY)))
 		{
-			gc();
-			if (FUC_FAILURE == (pos = find_position(EMPTY)))
+			//gc();
+			//if (FUC_FAILURE == (pos = find_position(EMPTY)))
 				return FUC_FAILURE;
 		} // end of if		
 
 		pids[pos] = pid;
+		n_pid_count++;
 		return FUC_SUCCESS;
 	} // end of if
 
@@ -59,7 +82,7 @@ int rm_pid(int pos)
 	if (n_pid_count == 0 || 
 		pos < 0 || 
 		pos >= MAX_CLIENT_NUM)
-		return FUN_FAILURE;
+		return FUC_FAILURE;
 
 	pid = pids[pos];
 	n_pid_count--;
@@ -104,5 +127,13 @@ int find_position(int content)
  */
 void gc()
 {
-	
+	int counter;
+
+	for (counter = 0; counter < MAX_CLIENT_NUM; counter++)
+	{
+		if (0 != kill(pids[counter], 0))
+		{
+			rm_pid(counter);
+		} // end of if
+	} // end of for
 } // end of gc()

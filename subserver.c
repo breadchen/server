@@ -4,14 +4,13 @@
 #include "config.h"
 #include "errreport.h"
 #include "message.h"
-
-#define CMD_EXECUTED 0
+#include "responsecode.h"
 
 extern int receive_command(int sockfd, char* command_out);
 extern int execute_command(char command[]);
 extern int on_subserver_quit();
 
-int subserver(int n_clientsock)
+int subserver(int n_clientsock, int rsp)
 {
 	char cmd_recv[MAX_MSG_LEN];
 	char charbuff[BUF_SIZE];
@@ -20,6 +19,20 @@ int subserver(int n_clientsock)
 
 	sprintf(test_buf, "%d", n_clientsock);
 	PRINT_TEST(test_buf)
+	
+	sprintf(charbuff, "%d", rsp);
+	if (FUC_FAILURE == send_response(n_clientsock, 
+									 charbuff,
+									 0, 
+									 strlen(charbuff) + 1))
+	{
+		printf("couldn't send response to client\n");
+	} // end of if
+
+	if (SERVER_BUSY == rsp)
+	{
+		return EXIT_SUCCESS;	
+	} // end of if
 
 	while (1)
 	{
@@ -32,7 +45,7 @@ int subserver(int n_clientsock)
 		execute_result = execute_command(cmd_recv);
 		if (FUC_FAILURE == execute_result) 
 		{
-			sprintf(charbuff, "%d", 1);
+			sprintf(charbuff, "%d", EXEC_FAILURE);
 		} // end of if
 		else
 		{
@@ -41,7 +54,7 @@ int subserver(int n_clientsock)
 				break;
 			} // end of if
 
-			sprintf(charbuff, "%d", CMD_EXECUTED);
+			sprintf(charbuff, "%d", EXEC_SUCCESS);
 		} // end of else
 		
 		if (FUC_FAILURE == send_response(n_clientsock, 
