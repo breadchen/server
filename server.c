@@ -17,6 +17,10 @@
 extern int get_local_address(struct sockaddr_in *addr_out);
 extern int addr_convert(char* addr, struct in_addr *addr_out); 
 extern void child_handler(int);
+extern void close_all_subserver(void);
+extern void term_handler(int sig);
+	
+static int n_pid_parent= 0;
 
 int main(int argc, char** argv)
 {
@@ -88,6 +92,15 @@ int main(int argc, char** argv)
 		PRINT_ERR("couldn't registe signal handler")
 		exit(EXIT_FAILURE);
 	} // end of if
+	
+	if (SIG_ERR == signal(SIGTERM, &term_handler))
+	{
+		PRINT_ERR("couldn't registe SIGTERM handler")
+		exit(EXIT_FAILURE);
+	} // end of if
+	
+	n_pid_parent = getpid();
+	atexit(close_all_subserver);
 
 	init_manager();
 	// handle client request
@@ -224,3 +237,36 @@ void child_handler(int sig)
 			n_exit_status);
 	PRINT_TEST(test_buf)
 } // end of child_handler()
+
+
+/*
+ * Function: send SIGUSR1 to all subservers when exit
+ */
+void close_all_subserver(void)
+{
+	int i;
+	int pid_count;
+	int* pids;
+
+	if (n_pid_parent != getpid())
+		return;
+
+	if (NULL == (pids = rm_all(&pid_count)))
+		return;
+
+	for (i = 0; i < pid_count; i++)
+	{
+		sprintf(test_buf, "closing subserver[%d]", pids[i]);
+		PRINT_TEST(test_buf)
+		kill(pids[i], CLOSE_SUBSERVER);
+	} // end of for
+} // end of close_all_subserver()
+
+/*
+ * Function: handle SIGTERM signal
+ */
+void term_handler(int sig)
+{
+	close_all_subserver();
+	exit(EXIT_SUCCESS);
+} // end of term_handler()

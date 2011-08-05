@@ -18,3 +18,7 @@ pidmanager.o : $(pidmanager_files) $(configs)
 	$(compiler) -g -c $(pidmanager_files)
 responsecode.o : $(responsecode_files) responsecode.h
 	$(compiler) -g -c $(responsecode_files)
+
+.PHONY : clean
+clean : 
+	-rm server $(objects)

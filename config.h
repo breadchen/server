@@ -9,9 +9,14 @@
 // chars of each message 
 #define MAX_MSG_LEN 50
 // use this to init pid_clients[]
-#define MAX_CLIENT_NUM 3
+#define MAX_CLIENT_NUM 256
 // char buffer size, used to convert int to char[]
 #define BUF_SIZE 50
+
+// define the signal used to close subserver
+#ifdef _SIGNAL_H
+#define CLOSE_SUBSERVER SIGUSR1
+#endif // if (_SIGNAL_H)
 
 #define FUC_SUCCESS 0
 #define FUC_FAILURE -1

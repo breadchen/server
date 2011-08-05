@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include "config.h"
 #include "errreport.h"
@@ -9,6 +10,9 @@
 extern int receive_command(int sockfd, char* command_out);
 extern int execute_command(char command[]);
 extern int on_subserver_quit();
+extern void close_subserver(int sig);
+
+static int sockfd;
 
 int subserver(int n_clientsock, int rsp)
 {
@@ -17,8 +21,9 @@ int subserver(int n_clientsock, int rsp)
 	int n_received;
 	int execute_result;
 
-	sprintf(test_buf, "%d", n_clientsock);
-	PRINT_TEST(test_buf)
+	//sprintf(test_buf, "%d", n_clientsock);
+	//PRINT_TEST(test_buf)
+	sockfd = n_clientsock;
 	
 	sprintf(charbuff, "%d", rsp);
 	if (FUC_FAILURE == send_response(n_clientsock, 
@@ -32,6 +37,13 @@ int subserver(int n_clientsock, int rsp)
 	if (SERVER_BUSY == rsp)
 	{
 		return EXIT_SUCCESS;	
+	} // end of if
+
+	if (SIG_ERR == signal(CLOSE_SUBSERVER, &close_subserver))
+	{
+		PRINT_ERR("couldn't registe signal handler")
+		PRINT_ERR(strerror(errno))
+		exit(EXIT_FAILURE);
 	} // end of if
 
 	while (1)
@@ -75,7 +87,7 @@ int execute_command(char command[])
 {
 	if ('q' == command[0] || 'Q' == command[0])
 		return QUIT_SUBSERVER;
-	printf("%s \n", command);
+	printf("client: %s \n", command);
 	return FUC_SUCCESS;
 } // end of execute_command()
 
@@ -186,3 +198,19 @@ int wrapper(struct message* msg_out, char* content, int offset, int len)
 
 	return FUC_SUCCESS;
 } // end of wrapper()
+
+
+/*
+ * Function:
+ */
+void close_subserver(int sig)
+{
+	char buf[10];
+
+	sprintf(buf, "%d", SERVER_QUIT);
+	send_response(sockfd, buf, 0, strlen(buf) + 1);
+	sprintf(test_buf, "subserver[%d] closed", getpid()); 
+	PRINT_TEST(test_buf)
+
+	exit(EXIT_SUCCESS);
+} // end of close_subserver()

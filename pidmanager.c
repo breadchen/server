@@ -4,6 +4,7 @@
 #include "errreport.h"
 
 #define EMPTY -1
+#define INCREASE_SIZE 50
 
 static int pids[MAX_CLIENT_NUM];
 static int n_pid_count;
@@ -79,9 +80,11 @@ int rm_pid(int pos)
 {
 	int pid;
 
-	if (n_pid_count == 0 || 
-		pos < 0 || 
+	if (pos < 0 || 
 		pos >= MAX_CLIENT_NUM)
+		return FUC_FAILURE;
+
+	if (EMPTY == pids[pos])
 		return FUC_FAILURE;
 
 	pid = pids[pos];
@@ -90,6 +93,54 @@ int rm_pid(int pos)
 
 	return pid;
 } // end of rm_pid()
+
+
+/*
+ * Function: remove all pid, 
+ *  return an array with pids removed
+ */
+int* rm_all(int* counter)
+{
+	int i;
+	int pid;
+	int buf_size = 0;
+	int* result;
+
+	if (0 == n_pid_count)
+		return NULL;
+	else
+	{
+		result = (int*)malloc(INCREASE_SIZE * sizeof(int));
+		buf_size = INCREASE_SIZE;
+	} // end of else
+
+	for (i = 0, *counter = 0;
+		 *counter < n_pid_count && i < MAX_CLIENT_NUM;
+		 i++)
+	{
+		if (EMPTY != (pid = pids[i]))
+		{
+			if (*counter >= buf_size)
+			{
+				result = (int*)
+					realloc(result, (buf_size + INCREASE_SIZE) * sizeof(int));
+				if (NULL == result)
+				{
+					PRINT_ERR("not enough memory")
+					return NULL;
+				} // end of if
+				buf_size += INCREASE_SIZE;
+			} // end of if
+			
+			result[*counter] = pid;
+			pids[i] = EMPTY;
+			(*counter)++;
+		} // end of if
+	} // end of for
+
+	result = (int*)realloc(result, (*counter) * sizeof(int));
+	return result;
+} // end of rm_all()
 
 
 /*
