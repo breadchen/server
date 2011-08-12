@@ -6,9 +6,9 @@
 #include "errreport.h"
 #include "message.h"
 #include "responsecode.h"
+#include "executecommand.h"
 
 extern int receive_command(int sockfd, char* command_out);
-extern int execute_command(char command[]);
 extern int on_subserver_quit();
 extern void close_subserver(int sig);
 
@@ -46,6 +46,8 @@ int subserver(int n_clientsock, int rsp)
 		exit(EXIT_FAILURE);
 	} // end of if
 
+	init_command_data();
+
 	while (1)
 	{
 		n_received = receive_command(n_clientsock, cmd_recv);
@@ -54,7 +56,9 @@ int subserver(int n_clientsock, int rsp)
 			return FUC_FAILURE;
 		} // end of if
 
-		execute_result = execute_command(cmd_recv);
+		execute_result = execute_command(cmd_recv, n_received);
+		
+		// handle execute result
 		if (FUC_FAILURE == execute_result) 
 		{
 			sprintf(charbuff, "%d", EXEC_FAILURE);
@@ -66,9 +70,10 @@ int subserver(int n_clientsock, int rsp)
 				break;
 			} // end of if
 
-			sprintf(charbuff, "%d", EXEC_SUCCESS);
+			sprintf(charbuff, "%d", execute_result);
 		} // end of else
 		
+		// send response
 		if (FUC_FAILURE == send_response(n_clientsock, 
 										 charbuff,
 										 0, 
@@ -81,15 +86,6 @@ int subserver(int n_clientsock, int rsp)
 	on_subserver_quit();
 	return FUC_SUCCESS;
 } // end of main()
-
-
-int execute_command(char command[])
-{
-	if ('q' == command[0] || 'Q' == command[0])
-		return QUIT_SUBSERVER;
-	printf("client: %s \n", command);
-	return FUC_SUCCESS;
-} // end of execute_command()
 
 
 int on_subserver_quit()
@@ -209,8 +205,10 @@ void close_subserver(int sig)
 
 	sprintf(buf, "%d", SERVER_QUIT);
 	send_response(sockfd, buf, 0, strlen(buf) + 1);
+
 	sprintf(test_buf, "subserver[%d] closed", getpid()); 
 	PRINT_TEST(test_buf)
 
+	close(sockfd);
 	exit(EXIT_SUCCESS);
 } // end of close_subserver()

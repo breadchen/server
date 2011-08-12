@@ -1,5 +1,5 @@
-#ifndef _ADDRESS_H
-#define _ADDRESS_H
+#ifndef _CONFIG_H
+#define _CONFIG_H
 
 #define PORT 2000
 #define IP "192.168.2.3"
@@ -20,6 +20,5 @@
 
 #define FUC_SUCCESS 0
 #define FUC_FAILURE -1
-#define QUIT_SUBSERVER 2
 
-#endif // if (!_ADDRESS_H)
+#endif // if (!_CONFIG_H)

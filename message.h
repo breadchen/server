@@ -8,7 +8,7 @@
 struct message
 {
 	char head[MSG_HEAD_LEN];
-	unsigned short len; // cmd length
+	unsigned short len; // cmd length, include a '\0' in the end
 	char cmd[MAX_MSG_LEN];
 };
 
