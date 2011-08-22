@@ -31,3 +31,11 @@ char** follows[MAX_HEAD_LEN] =
 {
 	follows0,follows1,follows2,follows3
 };
+
+int command_index[USED_CHAR_NUM];
+int command_list[CMD_NUM][CMD_LIST_WIDTH] = 
+{
+	{'L', 'E', 'D', '\0', -1},
+	{'Q', 'U', 'I', 'T' , -1}
+}; // end of command_list[][]
+

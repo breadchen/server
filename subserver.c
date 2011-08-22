@@ -122,8 +122,11 @@ int receive_command(int sockfd, char* command_out)
 	} while (n_offset < sizeof(struct message));
 
 	msg = (struct message*)buf;
+	if (msg->len <= 0 || msg->len >= MAX_MSG_LEN)
+		return FUC_FAILURE;
 
 	strncpy(command_out, msg->cmd, msg->len);
+	command_out[msg->len - 1] = '\0';
 
 	return msg->len;
 } // end of receive_command()

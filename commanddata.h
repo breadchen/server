@@ -7,6 +7,10 @@
 // number of chars used in command head
 #define USED_CHAR_NUM 26
 
+#define CMD_NUM 2
+#define LED 0
+#define QUIT 1
+
 struct command_ch
 {
 	char* follows;
@@ -14,11 +18,9 @@ struct command_ch
 };
 
 extern struct command_ch command_str[MAX_HEAD_LEN][USED_CHAR_NUM];
-//extern char* follows0[USED_CHAR_NUM];
-//extern char* follows1[USED_CHAR_NUM];
-//extern char* follows2[USED_CHAR_NUM];
-//extern char* follows3[USED_CHAR_NUM];
 extern char** follows[MAX_HEAD_LEN];
+extern int command_index[USED_CHAR_NUM];
+extern int command_list[CMD_NUM][CMD_LIST_WIDTH];
 
 //#define GET_FOLLOWS(a,b) follows##a[b]
 
