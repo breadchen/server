@@ -7,6 +7,8 @@
 // number of chars used in command head
 #define USED_CHAR_NUM 26
 
+#define SEPARATOR ' '
+
 #define CMD_NUM 2
 #define LED 0
 #define QUIT 1
