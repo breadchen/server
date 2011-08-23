@@ -6,85 +6,71 @@
 #include "commanddata.h"
 #include "responsecode.h"
 
-extern int quit_(char* args, int offset, int len);
-extern int led_(char* args, int offset, int len);
+extern int quit_(char** argv, int argc);
+extern int led_(char** argv, int argc);
 
 int execute_command(const char* command, int len)
 {
 	char* cmd = (char*)malloc(len);
-	int ch_counter;
-	int ch_pos = -1;
-	int i, j;
+	int i;
 	int result;
-	int max_len = len < MAX_HEAD_LEN ? len : MAX_HEAD_LEN;
+	int start_index;
+	int cmd_counter;
+	int args_num = 0;
+	char** cmd_args = NULL;
+
 	extern int toupper_(char*, int, int);
 	extern int map(char ch);
-	extern int ch_in_str(char ch, const char* str);
+	extern int str_split(const char* str, const char separator, char*** result);
 
 	if (len <= 0) goto failure;
 	strncpy(cmd, command, len);
 	
-	if (FUC_FAILURE == toupper_(cmd, 0, len))
-	{
-		PRINT_ERR("command length error")
-		goto unrecognized;
-	} // end of if
+	toupper_(cmd, 0, len);
 
 	sprintf(test_buf, "client: %s", command);
 	PRINT_TEST(test_buf)
 
-	// mismatch
-	ch_counter = 0;
-	do
-	{
-		// if command head can not be recognized return FUC_FAILURE
-		if (ch_counter > 0 && ch_pos > -1)
-		{
-			if (FUC_FAILURE == ch_in_str(
-					cmd[ch_counter],
-					command_str[ch_counter - 1][ch_pos].follows)
-			   )goto unrecognized;
-		} // end of if
+	if (FUC_FAILURE == (args_num = str_split(cmd, SEPARATOR, &cmd_args)))
+		goto failure;
 
-		// if command head contains chars not in [A-Z] return FUC_FAILURE
-		if (FUC_FAILURE == (ch_pos = map(cmd[ch_counter])))
-			goto unrecognized;
-		ch_counter++;
-	} while (' ' != cmd[ch_counter] && ch_counter < max_len);
-
+	start_index = map(cmd_args[0][0]);
+	if (strlen(cmd_args[0]) > MAX_HEAD_LEN || // cmd head too long
+		FUC_FAILURE == start_index || // map frist char fail
+		-1 == command_index[start_index] // no command head has a char like this at frist position
+	   ) goto unrecognized;
+	
 	// match
-	for (i = command_index[map(cmd[0])]; i < CMD_NUM; i++)
+	for (cmd_counter = command_index[start_index]; cmd_counter < CMD_NUM; cmd_counter++)
 	{
-		for (j = 0; 
-			 j < ch_counter; 
-			 j++)
-		{
-			if (command_list[i][j] != cmd[j])
-			{
-				if (0 == j) goto unrecognized;
-				break;
-			} // end of if
-		} // end of for
+		if (cmd_args[0][0] != command_list[cmd_counter].head[0])
+			goto unrecognized;
 
-		if (j == ch_counter && 
-			(MAX_HEAD_LEN == ch_counter || '\0' == command_list[i][j])
-		   )
+		if (0 == strcmp(cmd_args[0], command_list[cmd_counter].head))
 		{
-			if (command_list[i][CMD_LIST_WIDTH - 1] > 0)
+			if (command_list[cmd_counter].doit != NULL)
 			{
-				result = ((int (*)(char*, int, int))
-							(command_list[i][CMD_LIST_WIDTH - 1])
-					     )(cmd, ch_counter, len);
+				result = ((int (*)(char**, int))
+							(command_list[cmd_counter].doit)
+					     )(cmd_args, args_num);
 				goto success;
 			} // end of if
 		} // end of if
 	} // end of for
 
 unrecognized:
+	// free memory
 	free(cmd);
+	for (i = 0; i < args_num; i++)
+		free(cmd_args[i]);
+	free(cmd_args);
 	return CMD_UNRECOGNIZED;
 success:
+	// free memory
 	free(cmd);
+	for (i = 0; i < args_num; i++)
+		free(cmd_args[i]);
+	free(cmd_args);
 	return result;
 failure:
 	free(cmd);
@@ -98,31 +84,26 @@ failure:
  */
 int init_command_data()
 {
-	int ch_num;
+	int cmd_counter;
 	int i;
-	int last_pos;
 	extern int map(char ch);
 
-	for (ch_num = 0; ch_num < MAX_HEAD_LEN; ch_num++)
+	for (cmd_counter = 0; cmd_counter < CMD_NUM; cmd_counter++)
 	{
-		for (i = 0; i < USED_CHAR_NUM; i++)
-		{
-			command_str[ch_num][i].follows = (char*)(&follows[ch_num][i][0]);
-			command_str[ch_num][i].doit = NULL;
-		} // end of for
+		command_list[cmd_counter].head = command_head[cmd_counter];
+		command_list[cmd_counter].doit = NULL;
 	} // end of for
 
-	last_pos = 0;
 	for (i = 0; i < USED_CHAR_NUM; i++)
 		command_index[i] = -1;
 	for (i = 0; i < CMD_NUM; i++)
 	{
-		if (-1 == command_index[map(command_list[i][0])])
-			command_index[map(command_list[i][0])] = i;
+		if (-1 == command_index[map(command_list[i].head[0])])
+			command_index[map(command_list[i].head[0])] = i;
 	} // end of for
 
-	command_list[QUIT][CMD_LIST_WIDTH - 1] = (int)(&quit_);
-	command_list[LED][CMD_LIST_WIDTH - 1] = (int)(&led_);
+	command_list[QUIT].doit = quit_;
+	command_list[LED].doit = led_;
 } // end of init_command_data()
 
 
@@ -218,12 +199,13 @@ int str_split(const char* str, const char separator, char*** result)
 						return FUC_FAILURE;
 				} // end of if
 
+				if ('\0' == str[i]) interval--;
 				(*result)[cell_num] = (char*)malloc(interval * sizeof(char));
 				
 				// copy substring
 				for (j = last_separator + 1; j < i; j++)
 					(*result)[cell_num][j - last_separator - 1] = str[j];
-				
+
 				(*result)[cell_num][j - last_separator -1] = '\0';
 				cell_num++;
 			} // end of if
@@ -249,27 +231,18 @@ int get_opt(char* args, int offset, int len)
 } // end of get_opt()
 
 
-int quit_(char* args, int offset, int len)
+int quit_(char** argv, int argc)
 {
 	return QUIT_SUBSERVER;
 } // end of quit_()
 
 
-int led_(char* args, int offset, int len)
+int led_(char** argv, int argc)
 {
-	int substr_num = 0;
 	int i;
-	char** substr = NULL;
 
-	if (FUC_FAILURE != (substr_num = str_split(args, ' ', &substr)))
-	{
-		for (i = 0; i < substr_num; i++)
-			PRINT_TEST(substr[i])
-	} // end of if
+	for (i = 0; i < argc; i++)
+		PRINT_TEST(argv[i])
 
-	// free memory
-	for (i = 0; i < substr_num; i++)
-		free(substr[i]);
-	free(substr);
 	return EXEC_SUCCESS;
 } // end of led_()
