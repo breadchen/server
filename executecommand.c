@@ -226,8 +226,9 @@ int str_split(const char* str, const char separator, char*** result)
 } // end of str_split()
 
 
-int get_opt(char* args, int offset, int len)
+int get_opt(char** argv, int argc)
 {
+
 } // end of get_opt()
 
 
@@ -239,10 +240,42 @@ int quit_(char** argv, int argc)
 
 int led_(char** argv, int argc)
 {
-	int i;
+	int i, j;
+	int match;
+	int counter = 0;
+	char output[1024];
 
-	for (i = 0; i < argc; i++)
-		PRINT_TEST(argv[i])
+	output[counter] = '\0';
+	// get options
+	for (i = 1; i < argc; i++)
+	{
+		if ('-' == argv[i][0])
+		{
+			match = 0;
+			for (j = 0; j < OPT_LED_NUM; j++)
+			{
+				if (0 == strcmp(&(argv[i][1]), option[LED][j]))
+				{
+					strcat(output, option[LED][j]);
+					counter += strlen(option[LED][j]);
+					output[counter++] = ':';
+					output[counter++] = ' ';
+					output[counter] = '\0';
+					
+					match = 1;
+				}
+			} // end of for
+			if (1 != match) return CMD_UNRECOGNIZED;
+		} // end of if
+		else
+		{
+			strcat(output, argv[i]);
+			counter += strlen(argv[i]);
+			output[counter++] = ' ';
+			output[counter] = '\0';
+		} // end of else
+	} // end of for
+	PRINT_TEST(output)
 
 	return EXEC_SUCCESS;
 } // end of led_()
